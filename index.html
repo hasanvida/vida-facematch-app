@@ -2,47 +2,44 @@
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VIDA Face Capture</title>
+<title>VIDA Face Match</title>
 
 <style>
 body{
-  font-family: Arial;
-  background:#0f172a;
+  font-family: system-ui, Arial;
+  background:#0b1220;
   margin:0;
   text-align:center;
-  color:white;
+  color:#111;
 }
 
 .header{
   background:white;
-  padding:12px;
-}
-
-.header h2{
-  color:#0f172a;
-  margin:0;
+  padding:14px;
+  font-weight:600;
+  font-size:20px;
 }
 
 .card{
   background:white;
-  color:black;
   max-width:420px;
-  margin:25px auto;
-  padding:18px;
+  margin:30px auto;
+  padding:20px;
   border-radius:14px;
-  box-shadow:0 8px 25px rgba(0,0,0,0.25);
+  box-shadow:0 10px 30px rgba(0,0,0,0.25);
 }
 
 .camera-box{
   position:relative;
 }
 
-video, img{
+video,img{
   width:100%;
   border-radius:12px;
+  background:#eee;
 }
 
-/* Face oval guide */
+/* Face oval */
 .oval{
   position:absolute;
   top:50%;
@@ -50,28 +47,41 @@ video, img{
   transform:translate(-50%,-50%);
   width:65%;
   height:75%;
-  border:4px solid rgba(34,197,94,0.9);
+  border:3px solid rgba(34,197,94,0.9);
   border-radius:50%;
-  pointer-events:none;
+  display:none;
 }
 
 button{
   padding:12px;
   border:none;
   border-radius:8px;
-  margin:6px;
+  margin:6px 4px;
   cursor:pointer;
-  font-weight:bold;
-  width:45%;
+  font-weight:600;
+  width:48%;
+  font-size:14px;
 }
 
-.open{ background:#0ea5e9; color:white;}
-.capture{ background:#f59e0b; color:white;}
-.enroll{ background:#22c55e; color:white;}
-.search{ background:#6366f1; color:white;}
-.retake{ background:#ef4444; color:white;}
+.primary{
+  background:#0f172a;
+  color:white;
+}
+
+.secondary{
+  background:#e5e7eb;
+}
+
+.success{
+  background:#16a34a;
+  color:white;
+}
 
 #video{ display:none; }
+
+input[type=file]{
+  margin-top:10px;
+}
 
 #result{
   text-align:left;
@@ -79,7 +89,7 @@ button{
   background:#f3f4f6;
   padding:10px;
   border-radius:8px;
-  margin-top:10px;
+  margin-top:12px;
   max-height:150px;
   overflow:auto;
 }
@@ -89,31 +99,30 @@ button{
 <body>
 
 <div class="header">
-  <h2>VIDA Face Match</h2>
+  VIDA Face Match
 </div>
 
 <div class="card">
 
   <div class="camera-box">
     <video id="video" autoplay playsinline></video>
-    <div id="oval" class="oval" style="display:none;"></div>
+    <div id="oval" class="oval"></div>
     <img id="preview"/>
   </div>
 
   <br>
 
-  <button class="open" onclick="startCamera()">Open Camera</button>
-  <button class="capture" onclick="takePhoto()">Capture</button>
-  <button class="retake" onclick="retake()">Retake</button>
+  <button class="primary" onclick="startCamera()">Open Camera</button>
+  <button class="secondary" onclick="takePhoto()">Capture</button>
 
-  <br>
+  <button class="secondary" style="width:100%" onclick="retake()">Retake</button>
 
   <input type="file" accept="image/*" onchange="uploadImage(event)">
 
   <br>
 
-  <button class="enroll" onclick="send('blacklist')">Enroll</button>
-  <button class="search" onclick="send('search')">Search</button>
+  <button class="success" onclick="send('blacklist')">Enroll</button>
+  <button class="primary" onclick="send('search')">Search</button>
 
   <pre id="result"></pre>
 
@@ -140,13 +149,11 @@ function stopCamera(){
   if(stream){
     stream.getTracks().forEach(t=>t.stop());
   }
-  document.getElementById("video").style.display="none";
-  document.getElementById("oval").style.display="none";
+  video.style.display="none";
+  oval.style.display="none";
 }
 
 function takePhoto(){
-  const video=document.getElementById("video");
-
   if(video.style.display==="none"){
     alert("Open camera first");
     return;
@@ -155,21 +162,18 @@ function takePhoto(){
   const canvas=document.createElement("canvas");
   canvas.width=video.videoWidth;
   canvas.height=video.videoHeight;
-
-  const ctx=canvas.getContext("2d");
-  ctx.drawImage(video,0,0);
+  canvas.getContext("2d").drawImage(video,0,0);
 
   const dataUrl=canvas.toDataURL("image/jpeg",0.9);
   base64Image=dataUrl.split(",")[1];
-
-  document.getElementById("preview").src=dataUrl;
+  preview.src=dataUrl;
 
   stopCamera();
 }
 
 function retake(){
   base64Image="";
-  document.getElementById("preview").src="";
+  preview.src="";
   startCamera();
 }
 
@@ -180,10 +184,9 @@ function uploadImage(e){
   reader.onload=()=>{
     const dataUrl=reader.result;
     base64Image=dataUrl.split(",")[1];
-    document.getElementById("preview").src=dataUrl;
+    preview.src=dataUrl;
     stopCamera();
   };
-
   reader.readAsDataURL(file);
 }
 
@@ -193,20 +196,15 @@ async function send(action){
     return;
   }
 
-  document.getElementById("result").textContent="Processing...";
+  result.textContent="Processing...";
 
   const res=await fetch("/.netlify/functions/face",{
     method:"POST",
-    body:JSON.stringify({
-      action,
-      faceImage:base64Image
-    })
+    body:JSON.stringify({action,faceImage:base64Image})
   });
 
   const data=await res.json();
-
-  document.getElementById("result").textContent=
-    JSON.stringify(data,null,2);
+  result.textContent=JSON.stringify(data,null,2);
 }
 </script>
 
