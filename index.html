@@ -61,7 +61,6 @@ button{
   font-weight:600;
 }
 
-/* slider switch */
 .switch{
   position:relative;
   display:inline-block;
@@ -77,7 +76,6 @@ button{
   background:#d1d5db;
   border-radius:24px;
   cursor:pointer;
-  transition:.3s;
 }
 
 .slider:before{
@@ -100,7 +98,6 @@ input:checked + .slider:before{
   transform:translateX(22px);
 }
 
-/* RESULT BOX FIX */
 #result{
   margin-top:12px;
   font-size:13px;
@@ -108,10 +105,8 @@ input:checked + .slider:before{
   background:#f3f4f6;
   padding:12px;
   border-radius:10px;
-
   max-height:260px;
   overflow:auto;
-
   white-space:pre;
   font-family:monospace;
 }
@@ -141,7 +136,6 @@ input:checked + .slider:before{
 
   <input type="file" accept="image/*" onchange="uploadFile(event)" style="margin-top:10px;"/>
 
-  <!-- Toggle -->
   <div class="toggle">
     <span>Enroll</span>
     <label class="switch">
@@ -162,28 +156,30 @@ input:checked + .slider:before{
 let imageBase64="";
 let stream=null;
 
-function openCamera(){
+async function openCamera(){
   const video=document.getElementById("video");
   const preview=document.getElementById("preview");
-  const canvas=document.getElementById("canvas");
 
   preview.src="";
 
-  const ctx=canvas.getContext("2d");
-  ctx.clearRect(0,0,canvas.width,canvas.height);
+  try{
+    const s = await navigator.mediaDevices.getUserMedia({
+      video:{
+        width:{ideal:1280},
+        height:{ideal:720},
+        facingMode:"user"
+      }
+    });
 
-  video.style.display="block";
-
-  navigator.mediaDevices.getUserMedia({
-    video:{
-      width:{ideal:1280},
-      height:{ideal:720},
-      facingMode:"user"
-    }
-  }).then(s=>{
     stream=s;
     video.srcObject=s;
-  });
+    video.style.display="block";
+
+  }catch(err){
+    alert("Camera error: "+err.message+
+    "\n\nMake sure:\n- Using HTTPS\n- Camera permission allowed");
+    console.error(err);
+  }
 }
 
 function capture(){
@@ -191,7 +187,10 @@ function capture(){
   const canvas=document.getElementById("canvas");
   const preview=document.getElementById("preview");
 
-  if(!video.srcObject) return;
+  if(!video.srcObject){
+    alert("Open camera first");
+    return;
+  }
 
   const ctx=canvas.getContext("2d");
 
@@ -208,4 +207,62 @@ function capture(){
   preview.src="data:image/jpeg;base64,"+imageBase64;
 
   stream.getTracks().forEach(t=>t.stop());
-  video.sty
+  video.style.display="none";
+}
+
+function uploadFile(e){
+  const file=e.target.files[0];
+  if(!file) return;
+
+  const reader=new FileReader();
+
+  reader.onload=function(){
+    imageBase64=reader.result.split(",")[1];
+    document.getElementById("preview").src=reader.result;
+  }
+
+  reader.readAsDataURL(file);
+}
+
+function submitAction(){
+  if(!imageBase64){
+    alert("Capture or upload a photo first");
+    return;
+  }
+
+  const action=document.getElementById("modeToggle").checked
+    ?"search":"blacklist";
+
+  send(action);
+}
+
+async function send(action){
+  document.getElementById("loader").style.display="block";
+  document.getElementById("result").textContent="";
+
+  try{
+    const res=await fetch("/.netlify/functions/face",{
+      method:"POST",
+      headers:{ "Content-Type":"application/json" },
+      body:JSON.stringify({
+        action:action,
+        faceImage:imageBase64
+      })
+    });
+
+    const data=await res.json();
+
+    document.getElementById("result").textContent=
+      JSON.stringify(data,null,2);
+
+  }catch(err){
+    document.getElementById("result").textContent=
+      "Error: "+err.message;
+  }
+
+  document.getElementById("loader").style.display="none";
+}
+</script>
+
+</body>
+</html>
