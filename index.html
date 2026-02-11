@@ -1,54 +1,214 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <title>VIDA Face App</title>
-</head>
-<body>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VIDA Face Capture</title>
 
-<h2>VIDA Face Blacklist & Search</h2>
-
-<input type="file" id="file"><br><br>
-
-<button onclick="send('blacklist')">Enroll / Blacklist</button>
-<button onclick="send('search')">Search Face</button>
-
-<pre id="result"></pre>
-
-<script>
-async function toBase64(file){
-  return new Promise(resolve=>{
-    const reader=new FileReader();
-    reader.onload=()=>{
-      resolve(reader.result.split(',')[1]);
-    };
-    reader.readAsDataURL(file);
-  });
+<style>
+body{
+  font-family: Arial;
+  background:#0f172a;
+  margin:0;
+  text-align:center;
+  color:white;
 }
 
-async function send(action){
-  const file=document.getElementById('file').files[0];
-  if(!file){
-    alert("Select a file first");
+.header{
+  background:white;
+  padding:12px;
+}
+
+.header h2{
+  color:#0f172a;
+  margin:0;
+}
+
+.card{
+  background:white;
+  color:black;
+  max-width:420px;
+  margin:25px auto;
+  padding:18px;
+  border-radius:14px;
+  box-shadow:0 8px 25px rgba(0,0,0,0.25);
+}
+
+.camera-box{
+  position:relative;
+}
+
+video, img{
+  width:100%;
+  border-radius:12px;
+}
+
+/* Face oval guide */
+.oval{
+  position:absolute;
+  top:50%;
+  left:50%;
+  transform:translate(-50%,-50%);
+  width:65%;
+  height:75%;
+  border:4px solid rgba(34,197,94,0.9);
+  border-radius:50%;
+  pointer-events:none;
+}
+
+button{
+  padding:12px;
+  border:none;
+  border-radius:8px;
+  margin:6px;
+  cursor:pointer;
+  font-weight:bold;
+  width:45%;
+}
+
+.open{ background:#0ea5e9; color:white;}
+.capture{ background:#f59e0b; color:white;}
+.enroll{ background:#22c55e; color:white;}
+.search{ background:#6366f1; color:white;}
+.retake{ background:#ef4444; color:white;}
+
+#video{ display:none; }
+
+#result{
+  text-align:left;
+  font-size:12px;
+  background:#f3f4f6;
+  padding:10px;
+  border-radius:8px;
+  margin-top:10px;
+  max-height:150px;
+  overflow:auto;
+}
+</style>
+</head>
+
+<body>
+
+<div class="header">
+  <h2>VIDA Face Match</h2>
+</div>
+
+<div class="card">
+
+  <div class="camera-box">
+    <video id="video" autoplay playsinline></video>
+    <div id="oval" class="oval" style="display:none;"></div>
+    <img id="preview"/>
+  </div>
+
+  <br>
+
+  <button class="open" onclick="startCamera()">Open Camera</button>
+  <button class="capture" onclick="takePhoto()">Capture</button>
+  <button class="retake" onclick="retake()">Retake</button>
+
+  <br>
+
+  <input type="file" accept="image/*" onchange="uploadImage(event)">
+
+  <br>
+
+  <button class="enroll" onclick="send('blacklist')">Enroll</button>
+  <button class="search" onclick="send('search')">Search</button>
+
+  <pre id="result"></pre>
+
+</div>
+
+<script>
+let stream;
+let base64Image="";
+
+async function startCamera(){
+  const video=document.getElementById("video");
+  const oval=document.getElementById("oval");
+
+  stream=await navigator.mediaDevices.getUserMedia({
+    video:{ facingMode:"user" }
+  });
+
+  video.srcObject=stream;
+  video.style.display="block";
+  oval.style.display="block";
+}
+
+function stopCamera(){
+  if(stream){
+    stream.getTracks().forEach(t=>t.stop());
+  }
+  document.getElementById("video").style.display="none";
+  document.getElementById("oval").style.display="none";
+}
+
+function takePhoto(){
+  const video=document.getElementById("video");
+
+  if(video.style.display==="none"){
+    alert("Open camera first");
     return;
   }
 
-  const base64=await toBase64(file);
+  const canvas=document.createElement("canvas");
+  canvas.width=video.videoWidth;
+  canvas.height=video.videoHeight;
 
-  const res=await fetch('/.netlify/functions/face',{
-    method:'POST',
+  const ctx=canvas.getContext("2d");
+  ctx.drawImage(video,0,0);
+
+  const dataUrl=canvas.toDataURL("image/jpeg",0.9);
+  base64Image=dataUrl.split(",")[1];
+
+  document.getElementById("preview").src=dataUrl;
+
+  stopCamera();
+}
+
+function retake(){
+  base64Image="";
+  document.getElementById("preview").src="";
+  startCamera();
+}
+
+function uploadImage(e){
+  const file=e.target.files[0];
+  const reader=new FileReader();
+
+  reader.onload=()=>{
+    const dataUrl=reader.result;
+    base64Image=dataUrl.split(",")[1];
+    document.getElementById("preview").src=dataUrl;
+    stopCamera();
+  };
+
+  reader.readAsDataURL(file);
+}
+
+async function send(action){
+  if(!base64Image){
+    alert("Capture or upload a photo first");
+    return;
+  }
+
+  document.getElementById("result").textContent="Processing...";
+
+  const res=await fetch("/.netlify/functions/face",{
+    method:"POST",
     body:JSON.stringify({
       action,
-      faceImage:base64
+      faceImage:base64Image
     })
   });
 
   const data=await res.json();
 
-  document.getElementById('result').textContent=
+  document.getElementById("result").textContent=
     JSON.stringify(data,null,2);
 }
 </script>
 
 </body>
 </html>
-
