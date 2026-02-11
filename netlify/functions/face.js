@@ -24,7 +24,7 @@ exports.handler = async (event) => {
     if(action === "search"){
       body.searchOptions = {
         threshold: 0.81,
-        maxResult: 3
+        maxResult: 1
       };
     }
 
