@@ -9,7 +9,6 @@ body{
   margin:0;
   font-family:Arial, sans-serif;
   background:#0b1a2f;
-  color:white;
   text-align:center;
 }
 
@@ -18,14 +17,14 @@ body{
   padding:12px;
 }
 
-.header img{
-  height:40px;
+.header h2{
+  margin:0;
+  color:#0b1a2f;
 }
 
 .card{
   background:white;
-  color:black;
-  max-width:420px;
+  max-width:720px;
   margin:20px auto;
   padding:18px;
   border-radius:14px;
@@ -62,6 +61,7 @@ button{
   font-weight:600;
 }
 
+/* slider switch */
 .switch{
   position:relative;
   display:inline-block;
@@ -69,7 +69,7 @@ button{
   height:24px;
 }
 
-.switch input{ opacity:0; width:0; height:0; }
+.switch input{ opacity:0; }
 
 .slider{
   position:absolute;
@@ -100,15 +100,26 @@ input:checked + .slider:before{
   transform:translateX(22px);
 }
 
+/* RESULT BOX FIX */
 #result{
   margin-top:12px;
-  font-size:14px;
-  word-break:break-word;
+  font-size:13px;
+  text-align:left;
+  background:#f3f4f6;
+  padding:12px;
+  border-radius:10px;
+
+  max-height:260px;
+  overflow:auto;
+
+  white-space:pre;
+  font-family:monospace;
 }
 
 .loader{
   display:none;
   margin-top:10px;
+  font-weight:bold;
 }
 </style>
 </head>
@@ -116,15 +127,14 @@ input:checked + .slider:before{
 <body>
 
 <div class="header">
-  <!-- Replace with VIDA logo if desired -->
-  <h2 style="margin:0;color:#0b1a2f;">VIDA Face Match</h2>
+  <h2>VIDA Face Match</h2>
 </div>
 
 <div class="card">
 
   <video id="video" autoplay playsinline style="display:none;"></video>
   <canvas id="canvas" style="display:none;"></canvas>
-  <img id="preview" />
+  <img id="preview"/>
 
   <button class="primary" onclick="openCamera()">Open Camera</button>
   <button class="gray" onclick="capture()">Capture</button>
@@ -155,17 +165,25 @@ let stream=null;
 function openCamera(){
   const video=document.getElementById("video");
   const preview=document.getElementById("preview");
+  const canvas=document.getElementById("canvas");
 
-  // clear old preview
   preview.src="";
-  
+
+  const ctx=canvas.getContext("2d");
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+
   video.style.display="block";
 
-  navigator.mediaDevices.getUserMedia({video:true})
-    .then(s=>{
-      stream=s;
-      video.srcObject=s;
-    });
+  navigator.mediaDevices.getUserMedia({
+    video:{
+      width:{ideal:1280},
+      height:{ideal:720},
+      facingMode:"user"
+    }
+  }).then(s=>{
+    stream=s;
+    video.srcObject=s;
+  });
 }
 
 function capture(){
@@ -176,61 +194,18 @@ function capture(){
   if(!video.srcObject) return;
 
   const ctx=canvas.getContext("2d");
-  canvas.width=video.videoWidth;
-  canvas.height=video.videoHeight;
-  ctx.drawImage(video,0,0);
+
+  const size=Math.min(video.videoWidth, video.videoHeight);
+  const sx=(video.videoWidth-size)/2;
+  const sy=(video.videoHeight-size)/2;
+
+  canvas.width=600;
+  canvas.height=600;
+
+  ctx.drawImage(video, sx, sy, size, size, 0, 0, 600, 600);
 
   imageBase64=canvas.toDataURL("image/jpeg").split(",")[1];
   preview.src="data:image/jpeg;base64,"+imageBase64;
 
-  // stop camera
   stream.getTracks().forEach(t=>t.stop());
-  video.style.display="none";
-}
-
-function uploadFile(e){
-  const file=e.target.files[0];
-  const reader=new FileReader();
-
-  reader.onload=function(){
-    imageBase64=reader.result.split(",")[1];
-    document.getElementById("preview").src=reader.result;
-  }
-  reader.readAsDataURL(file);
-}
-
-function submitAction(){
-  if(!imageBase64){
-    alert("Capture or upload a photo first");
-    return;
-  }
-
-  const action=document.getElementById("modeToggle").checked
-    ?"search":"blacklist";
-
-  send(action);
-}
-
-async function send(action){
-  document.getElementById("loader").style.display="block";
-  document.getElementById("result").innerText="";
-
-  const res=await fetch("/.netlify/functions/face",{
-    method:"POST",
-    headers:{ "Content-Type":"application/json" },
-    body:JSON.stringify({
-      action:action,
-      faceImage:imageBase64
-    })
-  });
-
-  const data=await res.json();
-
-  document.getElementById("loader").style.display="none";
-  document.getElementById("result").innerText=
-    JSON.stringify(data,null,2);
-}
-</script>
-
-</body>
-</html>
+  video.sty
