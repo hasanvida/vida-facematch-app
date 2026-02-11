@@ -6,92 +6,109 @@
 
 <style>
 body{
-  font-family: system-ui, Arial;
-  background:#0b1220;
   margin:0;
+  font-family:Arial, sans-serif;
+  background:#0b1a2f;
+  color:white;
   text-align:center;
-  color:#111;
 }
 
 .header{
   background:white;
-  padding:14px;
-  font-weight:600;
-  font-size:20px;
+  padding:12px;
+}
+
+.header img{
+  height:40px;
 }
 
 .card{
   background:white;
+  color:black;
   max-width:420px;
-  margin:30px auto;
-  padding:20px;
+  margin:20px auto;
+  padding:18px;
   border-radius:14px;
-  box-shadow:0 10px 30px rgba(0,0,0,0.25);
+  box-shadow:0 8px 24px rgba(0,0,0,0.25);
 }
 
-.camera-box{
-  position:relative;
-}
-
-video,img{
+video, img{
   width:100%;
   border-radius:12px;
-  background:#eee;
-}
-
-/* Face oval */
-.oval{
-  position:absolute;
-  top:50%;
-  left:50%;
-  transform:translate(-50%,-50%);
-  width:65%;
-  height:75%;
-  border:3px solid rgba(34,197,94,0.9);
-  border-radius:50%;
-  display:none;
+  margin-top:10px;
 }
 
 button{
   padding:12px;
   border:none;
-  border-radius:8px;
-  margin:6px 4px;
-  cursor:pointer;
+  border-radius:10px;
+  font-size:16px;
   font-weight:600;
-  width:48%;
-  font-size:14px;
-}
-
-.primary{
-  background:#0f172a;
-  color:white;
-}
-
-.secondary{
-  background:#e5e7eb;
-}
-
-.success{
-  background:#16a34a;
-  color:white;
-}
-
-#video{ display:none; }
-
-input[type=file]{
+  cursor:pointer;
+  width:100%;
   margin-top:10px;
 }
 
+.primary{ background:#0b1a2f; color:white; }
+.gray{ background:#e5e7eb; }
+.success{ background:#16a34a; color:white; }
+
+.toggle{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:12px;
+  margin:15px 0;
+  font-weight:600;
+}
+
+.switch{
+  position:relative;
+  display:inline-block;
+  width:46px;
+  height:24px;
+}
+
+.switch input{ opacity:0; width:0; height:0; }
+
+.slider{
+  position:absolute;
+  inset:0;
+  background:#d1d5db;
+  border-radius:24px;
+  cursor:pointer;
+  transition:.3s;
+}
+
+.slider:before{
+  content:"";
+  position:absolute;
+  height:18px;
+  width:18px;
+  left:3px;
+  bottom:3px;
+  background:white;
+  border-radius:50%;
+  transition:.3s;
+}
+
+input:checked + .slider{
+  background:#16a34a;
+}
+
+input:checked + .slider:before{
+  transform:translateX(22px);
+}
+
 #result{
-  text-align:left;
-  font-size:12px;
-  background:#f3f4f6;
-  padding:10px;
-  border-radius:8px;
   margin-top:12px;
-  max-height:150px;
-  overflow:auto;
+  font-size:14px;
+  word-break:break-word;
+}
+
+.loader{
+  display:none;
+  margin-top:10px;
 }
 </style>
 </head>
@@ -99,112 +116,119 @@ input[type=file]{
 <body>
 
 <div class="header">
-  VIDA Face Match
+  <!-- Replace with VIDA logo if desired -->
+  <h2 style="margin:0;color:#0b1a2f;">VIDA Face Match</h2>
 </div>
 
 <div class="card">
 
-  <div class="camera-box">
-    <video id="video" autoplay playsinline></video>
-    <div id="oval" class="oval"></div>
-    <img id="preview"/>
+  <video id="video" autoplay playsinline style="display:none;"></video>
+  <canvas id="canvas" style="display:none;"></canvas>
+  <img id="preview" />
+
+  <button class="primary" onclick="openCamera()">Open Camera</button>
+  <button class="gray" onclick="capture()">Capture</button>
+
+  <input type="file" accept="image/*" onchange="uploadFile(event)" style="margin-top:10px;"/>
+
+  <!-- Toggle -->
+  <div class="toggle">
+    <span>Enroll</span>
+    <label class="switch">
+      <input type="checkbox" id="modeToggle">
+      <span class="slider"></span>
+    </label>
+    <span>Search</span>
   </div>
 
-  <br>
+  <button class="success" onclick="submitAction()">Submit</button>
 
-  <button class="primary" onclick="startCamera()">Open Camera</button>
-  <button class="secondary" onclick="takePhoto()">Capture</button>
-
-  <button class="secondary" style="width:100%" onclick="retake()">Retake</button>
-
-  <input type="file" accept="image/*" onchange="uploadImage(event)">
-
-  <br>
-
-  <button class="success" onclick="send('blacklist')">Enroll</button>
-  <button class="primary" onclick="send('search')">Search</button>
-
-  <pre id="result"></pre>
+  <div class="loader" id="loader">Processing...</div>
+  <div id="result"></div>
 
 </div>
 
 <script>
-let stream;
-let base64Image="";
+let imageBase64="";
+let stream=null;
 
-async function startCamera(){
+function openCamera(){
   const video=document.getElementById("video");
-  const oval=document.getElementById("oval");
+  const preview=document.getElementById("preview");
 
-  stream=await navigator.mediaDevices.getUserMedia({
-    video:{ facingMode:"user" }
-  });
-
-  video.srcObject=stream;
+  // clear old preview
+  preview.src="";
+  
   video.style.display="block";
-  oval.style.display="block";
+
+  navigator.mediaDevices.getUserMedia({video:true})
+    .then(s=>{
+      stream=s;
+      video.srcObject=s;
+    });
 }
 
-function stopCamera(){
-  if(stream){
-    stream.getTracks().forEach(t=>t.stop());
-  }
-  video.style.display="none";
-  oval.style.display="none";
-}
+function capture(){
+  const video=document.getElementById("video");
+  const canvas=document.getElementById("canvas");
+  const preview=document.getElementById("preview");
 
-function takePhoto(){
-  if(video.style.display==="none"){
-    alert("Open camera first");
-    return;
-  }
+  if(!video.srcObject) return;
 
-  const canvas=document.createElement("canvas");
+  const ctx=canvas.getContext("2d");
   canvas.width=video.videoWidth;
   canvas.height=video.videoHeight;
-  canvas.getContext("2d").drawImage(video,0,0);
+  ctx.drawImage(video,0,0);
 
-  const dataUrl=canvas.toDataURL("image/jpeg",0.9);
-  base64Image=dataUrl.split(",")[1];
-  preview.src=dataUrl;
+  imageBase64=canvas.toDataURL("image/jpeg").split(",")[1];
+  preview.src="data:image/jpeg;base64,"+imageBase64;
 
-  stopCamera();
+  // stop camera
+  stream.getTracks().forEach(t=>t.stop());
+  video.style.display="none";
 }
 
-function retake(){
-  base64Image="";
-  preview.src="";
-  startCamera();
-}
-
-function uploadImage(e){
+function uploadFile(e){
   const file=e.target.files[0];
   const reader=new FileReader();
 
-  reader.onload=()=>{
-    const dataUrl=reader.result;
-    base64Image=dataUrl.split(",")[1];
-    preview.src=dataUrl;
-    stopCamera();
-  };
+  reader.onload=function(){
+    imageBase64=reader.result.split(",")[1];
+    document.getElementById("preview").src=reader.result;
+  }
   reader.readAsDataURL(file);
 }
 
-async function send(action){
-  if(!base64Image){
+function submitAction(){
+  if(!imageBase64){
     alert("Capture or upload a photo first");
     return;
   }
 
-  result.textContent="Processing...";
+  const action=document.getElementById("modeToggle").checked
+    ?"search":"blacklist";
+
+  send(action);
+}
+
+async function send(action){
+  document.getElementById("loader").style.display="block";
+  document.getElementById("result").innerText="";
 
   const res=await fetch("/.netlify/functions/face",{
     method:"POST",
-    body:JSON.stringify({action,faceImage:base64Image})
+    headers:{ "Content-Type":"application/json" },
+    body:JSON.stringify({
+      action:action,
+      faceImage:imageBase64
+    })
   });
 
   const data=await res.json();
-  result.textContent=JSON.stringify(data,null,2);
+
+  document.getElementById("loader").style.display="none";
+  document.getElementById("result").innerText=
+    JSON.stringify(data,null,2);
 }
 </script>
 
