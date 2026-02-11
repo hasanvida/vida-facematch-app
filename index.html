@@ -1,1 +1,54 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>VIDA Face App</title>
+</head>
+<body>
+
+<h2>VIDA Face Blacklist & Search</h2>
+
+<input type="file" id="file"><br><br>
+
+<button onclick="send('blacklist')">Enroll / Blacklist</button>
+<button onclick="send('search')">Search Face</button>
+
+<pre id="result"></pre>
+
+<script>
+async function toBase64(file){
+  return new Promise(resolve=>{
+    const reader=new FileReader();
+    reader.onload=()=>{
+      resolve(reader.result.split(',')[1]);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
+async function send(action){
+  const file=document.getElementById('file').files[0];
+  if(!file){
+    alert("Select a file first");
+    return;
+  }
+
+  const base64=await toBase64(file);
+
+  const res=await fetch('/.netlify/functions/face',{
+    method:'POST',
+    body:JSON.stringify({
+      action,
+      faceImage:base64
+    })
+  });
+
+  const data=await res.json();
+
+  document.getElementById('result').textContent=
+    JSON.stringify(data,null,2);
+}
+</script>
+
+</body>
+</html>
 
