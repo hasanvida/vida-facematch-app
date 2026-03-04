@@ -1,156 +1,265 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>VIDA Face Match</title>
+  <meta charset="UTF-8" />
+  <title>VIDA | Face Match Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
-<style>
-body{
-  margin:0;
-  font-family:Arial, sans-serif;
-  background:#0b1a2f;
-  text-align:center;
-}
+  <style>
+    :root {
+      --primary: #00c37b; /* VIDA Green */
+      --secondary: #011627; /* VIDA Navy */
+      --bg-body: #f4f7f9;
+      --card-bg: #ffffff;
+      --text-main: #1e293b;
+      --text-muted: #64748b;
+      --border: #e2e8f0;
+    }
 
-.header{
-  background:white;
-  padding:12px;
-}
+    body {
+      margin: 0;
+      font-family: 'Inter', system-ui, sans-serif;
+      background-color: var(--bg-body);
+      color: var(--text-main);
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
 
-.header h2{
-  margin:0;
-  color:#0b1a2f;
-}
+    /* Professional Header */
+    header {
+      background: white;
+      padding: 0.75rem 2rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px solid var(--border);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+    }
 
-.card{
-  background:white;
-  max-width:720px;
-  margin:20px auto;
-  padding:18px;
-  border-radius:14px;
-  box-shadow:0 8px 24px rgba(0,0,0,0.25);
-}
+    .header-logo {
+      height: 38px;
+      display: block;
+    }
 
-video, img{
-  width:100%;
-  border-radius:12px;
-  margin-top:10px;
-}
+    .container {
+      max-width: 800px;
+      margin: 2rem auto;
+      padding: 0 1rem;
+      flex-grow: 1;
+    }
 
-button{
-  padding:12px;
-  border:none;
-  border-radius:10px;
-  font-size:16px;
-  font-weight:600;
-  cursor:pointer;
-  width:100%;
-  margin-top:10px;
-}
+    .card {
+      background: var(--card-bg);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 1.75rem;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
+      text-align: center;
+    }
 
-.primary{ background:#0b1a2f; color:white; }
-.gray{ background:#e5e7eb; }
-.success{ background:#16a34a; color:white; }
+    h3 {
+      font-size: 0.7rem;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      color: var(--text-muted);
+      margin-bottom: 1.25rem;
+      font-weight: 700;
+      text-align: left;
+    }
 
-.toggle{
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  gap:12px;
-  margin:15px 0;
-  font-weight:600;
-}
+    /* Media Elements */
+    video, #preview {
+      width: 100%;
+      max-width: 400px;
+      border-radius: 12px;
+      margin: 10px auto;
+      display: block;
+      background: #000;
+      border: 2px solid var(--border);
+    }
 
-.switch{
-  position:relative;
-  display:inline-block;
-  width:46px;
-  height:24px;
-}
+    /* Buttons - Matching the eKYC Theme */
+    .button-group {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 15px;
+    }
 
-.switch input{ opacity:0; }
+    button {
+      font-family: inherit;
+      padding: 12px;
+      border-radius: 10px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.2s;
+      border: 1px solid var(--border);
+    }
 
-.slider{
-  position:absolute;
-  inset:0;
-  background:#d1d5db;
-  border-radius:24px;
-  cursor:pointer;
-}
+    .btn-outline { background: white; color: var(--secondary); }
+    .btn-outline:hover { border-color: var(--primary); background: #f0fff9; }
+    
+    .btn-primary { 
+      background: var(--secondary); 
+      color: white; 
+      border: none;
+      grid-column: span 2;
+    }
+    .btn-primary:hover { opacity: 0.9; transform: translateY(-1px); }
 
-.slider:before{
-  content:"";
-  position:absolute;
-  height:18px;
-  width:18px;
-  left:3px;
-  bottom:3px;
-  background:white;
-  border-radius:50%;
-  transition:.3s;
-}
+    .btn-submit {
+      background: var(--primary);
+      color: white;
+      border: none;
+      width: 100%;
+      margin-top: 20px;
+      font-size: 16px;
+    }
+    .btn-submit:hover { background: #00a165; }
 
-input:checked + .slider{
-  background:#16a34a;
-}
+    /* File Input Styling */
+    .file-input-wrapper {
+      margin-top: 15px;
+      font-size: 0.85rem;
+      color: var(--text-muted);
+    }
 
-input:checked + .slider:before{
-  transform:translateX(22px);
-}
+    /* Toggle Switch */
+    .toggle-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 15px;
+      margin: 25px 0;
+      font-weight: 600;
+      color: var(--secondary);
+    }
 
-#result{
-  margin-top:12px;
-  font-size:13px;
-  text-align:left;
-  background:#f3f4f6;
-  padding:12px;
-  border-radius:10px;
-  max-height:260px;
-  overflow:auto;
-  white-space:pre;
-  font-family:monospace;
-}
+    .switch {
+      position: relative;
+      display: inline-block;
+      width: 50px;
+      height: 26px;
+    }
 
-.loader{
-  display:none;
-  margin-top:10px;
-  font-weight:bold;
-}
-</style>
+    .switch input { opacity: 0; width: 0; height: 0; }
+
+    .slider {
+      position: absolute;
+      cursor: pointer;
+      inset: 0;
+      background-color: #d1d5db;
+      transition: .4s;
+      border-radius: 34px;
+    }
+
+    .slider:before {
+      position: absolute;
+      content: "";
+      height: 18px;
+      width: 18px;
+      left: 4px;
+      bottom: 4px;
+      background-color: white;
+      transition: .4s;
+      border-radius: 50%;
+    }
+
+    input:checked + .slider { background-color: var(--primary); }
+    input:checked + .slider:before { transform: translateX(24px); }
+
+    /* Results Console */
+    #result {
+      margin-top: 20px;
+      font-size: 13px;
+      text-align: left;
+      background: var(--secondary);
+      color: #94a3b8;
+      padding: 15px;
+      border-radius: 12px;
+      max-height: 260px;
+      overflow: auto;
+      white-space: pre-wrap;
+      font-family: 'Fira Code', monospace;
+      border: 1px solid #1e293b;
+    }
+
+    .loader {
+      display: none;
+      margin-top: 10px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    /* Footer */
+    footer {
+      padding: 2rem;
+      text-align: center;
+      background: white;
+      border-top: 1px solid var(--border);
+    }
+
+    .powered-container {
+      display: inline-flex;
+      align-items: center;
+      gap: 10px;
+      padding: 8px 16px;
+      border-radius: 50px;
+      background: #f8fafc;
+      border: 1px solid var(--border);
+    }
+
+    .footer-logo { height: 18px; }
+  </style>
 </head>
 
 <body>
 
-<div class="header">
-  <h2>VIDA Face Match</h2>
-</div>
+<header>
+  <img src="https://fintechid-bucket.s3.ap-southeast-3.amazonaws.com/aftech/company/logo/ae7c5b5c-9182-4eac-850c-e44e1c9e19aa.png" alt="VIDA" class="header-logo">
+  <div style="font-size: 0.8rem; color: var(--text-muted); font-weight: 600; letter-spacing: 0.05em;">FACE MATCH SERVICE</div>
+</header>
 
-<div class="card">
+<div class="container">
+  <div class="card">
+    <h3>Biometric Capture</h3>
+    
+    <video id="video" autoplay playsinline style="display:none;"></video>
+    <canvas id="canvas" style="display:none;"></canvas>
+    <img id="preview" src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7" alt="Preview Placeholder"/>
 
-  <video id="video" autoplay playsinline style="display:none;"></video>
-  <canvas id="canvas" style="display:none;"></canvas>
-  <img id="preview"/>
+    <div class="button-group">
+      <button class="btn-primary" onclick="openCamera()">Open Camera</button>
+      <button class="btn-outline" onclick="capture()">Capture Photo</button>
+      <button class="btn-outline" onclick="document.getElementById('fileInput').click()">Upload Image</button>
+      <input type="file" id="fileInput" accept="image/*" onchange="uploadFile(event)" style="display:none;"/>
+    </div>
 
-  <button class="primary" onclick="openCamera()">Open Camera</button>
-  <button class="gray" onclick="capture()">Capture</button>
+    <div class="toggle-container">
+      <span style="opacity: 0.6">Enroll</span>
+      <label class="switch">
+        <input type="checkbox" id="modeToggle">
+        <span class="slider"></span>
+      </label>
+      <span>Search</span>
+    </div>
 
-  <input type="file" accept="image/*" onchange="uploadFile(event)" style="margin-top:10px;"/>
+    <button class="btn-submit" onclick="submitAction()">Run Face Match</button>
 
-  <div class="toggle">
-    <span>Enroll</span>
-    <label class="switch">
-      <input type="checkbox" id="modeToggle">
-      <span class="slider"></span>
-    </label>
-    <span>Search</span>
+    <div class="loader" id="loader">Processing Biometrics...</div>
+    <div id="result">// Output console ready...</div>
   </div>
-
-  <button class="success" onclick="submitAction()">Submit</button>
-
-  <div class="loader" id="loader">Processing...</div>
-  <div id="result"></div>
-
 </div>
+
+<footer>
+  <div class="powered-container">
+    <span style="font-size: 0.8rem; color: #64748b; font-weight: 500;">Powered by</span>
+    <img src="https://fintechid-bucket.s3.ap-southeast-3.amazonaws.com/aftech/company/logo/ae7c5b5c-9182-4eac-850c-e44e1c9e19aa.png" alt="VIDA" class="footer-logo">
+  </div>
+</footer>
 
 <script>
 let imageBase64="";
@@ -159,26 +268,17 @@ let stream=null;
 async function openCamera(){
   const video=document.getElementById("video");
   const preview=document.getElementById("preview");
+  preview.style.display="none";
 
-  preview.src="";
-
-  try{
+  try {
     const s = await navigator.mediaDevices.getUserMedia({
-      video:{
-        width:{ideal:1280},
-        height:{ideal:720},
-        facingMode:"user"
-      }
+      video:{ width:{ideal:1280}, height:{ideal:720}, facingMode:"user" }
     });
-
     stream=s;
     video.srcObject=s;
     video.style.display="block";
-
-  }catch(err){
-    alert("Camera error: "+err.message+
-    "\n\nMake sure:\n- Using HTTPS\n- Camera permission allowed");
-    console.error(err);
+  } catch(err) {
+    alert("Camera access denied or not available.");
   }
 }
 
@@ -187,24 +287,20 @@ function capture(){
   const canvas=document.getElementById("canvas");
   const preview=document.getElementById("preview");
 
-  if(!video.srcObject){
-    alert("Open camera first");
-    return;
-  }
+  if(!video.srcObject) return alert("Please open camera first");
 
   const ctx=canvas.getContext("2d");
-
   const size=Math.min(video.videoWidth, video.videoHeight);
   const sx=(video.videoWidth-size)/2;
   const sy=(video.videoHeight-size)/2;
 
   canvas.width=600;
   canvas.height=600;
-
   ctx.drawImage(video, sx, sy, size, size, 0, 0, 600, 600);
 
   imageBase64=canvas.toDataURL("image/jpeg").split(",")[1];
   preview.src="data:image/jpeg;base64,"+imageBase64;
+  preview.style.display="block";
 
   stream.getTracks().forEach(t=>t.stop());
   video.style.display="none";
@@ -213,53 +309,38 @@ function capture(){
 function uploadFile(e){
   const file=e.target.files[0];
   if(!file) return;
-
   const reader=new FileReader();
-
   reader.onload=function(){
     imageBase64=reader.result.split(",")[1];
-    document.getElementById("preview").src=reader.result;
+    const preview = document.getElementById("preview");
+    preview.src=reader.result;
+    preview.style.display="block";
+    document.getElementById("video").style.display="none";
   }
-
   reader.readAsDataURL(file);
 }
 
 function submitAction(){
-  if(!imageBase64){
-    alert("Capture or upload a photo first");
-    return;
-  }
-
-  const action=document.getElementById("modeToggle").checked
-    ?"search":"blacklist";
-
+  if(!imageBase64) return alert("Please capture or upload a photo first");
+  const action=document.getElementById("modeToggle").checked ? "search" : "blacklist";
   send(action);
 }
 
 async function send(action){
   document.getElementById("loader").style.display="block";
-  document.getElementById("result").textContent="";
+  document.getElementById("result").textContent="// Sending request...";
 
-  try{
-    const res=await fetch("/.netlify/functions/face",{
+  try {
+    const res = await fetch("/.netlify/functions/face",{
       method:"POST",
       headers:{ "Content-Type":"application/json" },
-      body:JSON.stringify({
-        action:action,
-        faceImage:imageBase64
-      })
+      body:JSON.stringify({ action:action, faceImage:imageBase64 })
     });
-
     const data=await res.json();
-
-    document.getElementById("result").textContent=
-      JSON.stringify(data,null,2);
-
-  }catch(err){
-    document.getElementById("result").textContent=
-      "Error: "+err.message;
+    document.getElementById("result").textContent=JSON.stringify(data,null,2);
+  } catch(err) {
+    document.getElementById("result").textContent="Error: "+err.message;
   }
-
   document.getElementById("loader").style.display="none";
 }
 </script>
