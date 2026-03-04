@@ -39,7 +39,7 @@
     .header-logo { height: 38px; }
 
     .container {
-      max-width: 600px;
+      max-width: 500px;
       margin: 2rem auto;
       padding: 0 1rem;
       flex-grow: 1;
@@ -51,20 +51,46 @@
       border-radius: 20px;
       padding: 2rem;
       box-shadow: 0 10px 25px rgba(0,0,0,0.05);
-      text-align: center;
     }
 
-    /* Camera Viewport Wrapper */
+    /* TOP TOGGLE: High Visibility Mode Switcher */
+    .mode-selector {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      background: #f1f5f9;
+      padding: 5px;
+      border-radius: 12px;
+      margin-bottom: 1.5rem;
+    }
+
+    .mode-btn {
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+      background: transparent;
+      color: var(--text-muted);
+      font-size: 0.9rem;
+    }
+
+    .mode-btn.active {
+      background: white;
+      color: var(--secondary);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+
+    /* CLEAN VIEWPORT: No overlays inside */
     .viewport-container {
-      position: relative;
       width: 100%;
-      max-width: 400px;
       aspect-ratio: 1/1;
-      margin: 0 auto 1.5rem;
+      margin-bottom: 1.5rem;
       background: #000;
-      border-radius: 50%; /* Circle for face focus */
+      border-radius: 16px;
       overflow: hidden;
-      border: 4px solid var(--border);
+      border: 1px solid var(--border);
+      position: relative;
     }
 
     video, #preview {
@@ -73,88 +99,46 @@
       object-fit: cover;
     }
 
-    /* Face Silhouette Guide Overlay */
-    .face-guide {
-      position: absolute;
-      top: 0; left: 0; width: 100%; height: 100%;
-      background: url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" fill="none" stroke="white" stroke-width="0.5" opacity="0.5"><path d="M50 20c-10 0-18 8-18 20 0 15 8 25 18 25s18-10 18-25c0-12-8-20-18-20zM35 75c0-10 10-15 15-15s15 5 15 15" /></svg>');
-      background-size: cover;
-      pointer-events: none;
-    }
-
-    /* Step-based Buttons */
-    .action-area {
+    /* BUTTON STYLES */
+    .action-stack {
       display: flex;
       flex-direction: column;
       gap: 12px;
     }
 
     .btn {
-      padding: 14px;
+      padding: 16px;
       border-radius: 12px;
       font-size: 15px;
       font-weight: 600;
       cursor: pointer;
-      transition: all 0.2s;
       border: 1px solid transparent;
       font-family: inherit;
-    }
-
-    .btn-main { background: var(--secondary); color: white; width: 100%; }
-    .btn-capture { background: var(--primary); color: white; border: none; }
-    .btn-outline { background: white; border: 1px solid var(--border); color: var(--text-muted); }
-    
-    .btn:hover { transform: translateY(-1px); filter: brightness(1.1); }
-    .btn:active { transform: translateY(0); }
-
-    /* Settings & Mode */
-    .mode-settings {
+      transition: 0.2s;
       display: flex;
-      justify-content: space-between;
       align-items: center;
-      padding: 1rem 0;
-      border-top: 1px solid var(--border);
-      margin-top: 1.5rem;
+      justify-content: center;
     }
 
-    .switch {
-      position: relative;
-      display: inline-block;
-      width: 44px;
-      height: 22px;
-    }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .slider {
-      position: absolute;
-      cursor: pointer;
-      inset: 0;
-      background-color: #cbd5e1;
-      transition: .4s;
-      border-radius: 34px;
-    }
-    .slider:before {
-      position: absolute;
-      content: "";
-      height: 16px; width: 16px;
-      left: 3px; bottom: 3px;
-      background-color: white;
-      transition: .4s;
-      border-radius: 50%;
-    }
-    input:checked + .slider { background-color: var(--primary); }
-    input:checked + .slider:before { transform: translateX(22px); }
+    .btn-primary { background: var(--secondary); color: white; }
+    .btn-success { background: var(--primary); color: white; border: none; }
+    .btn-outline { background: white; border: 1px solid var(--border); color: var(--text-main); }
+    
+    .btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .btn:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.05); }
 
+    /* CONSOLE OUTPUT */
     #result {
       margin-top: 1.5rem;
       font-size: 12px;
-      text-align: left;
       background: #0f172a;
       color: #94a3b8;
       padding: 1rem;
       border-radius: 12px;
       max-height: 150px;
       overflow-y: auto;
-      font-family: monospace;
+      font-family: 'Fira Code', monospace;
+      white-space: pre-wrap;
     }
 
     footer {
@@ -163,6 +147,7 @@
       background: white;
       border-top: 1px solid var(--border);
     }
+
     .footer-logo { height: 18px; vertical-align: middle; }
   </style>
 </head>
@@ -175,33 +160,30 @@
 
 <div class="container">
   <div class="card">
-    <h2 style="margin-top:0; font-size: 1.25rem;">Face Recognition</h2>
-    <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 2rem;">Position your face within the circle and follow the prompts.</p>
     
+    <div class="mode-selector">
+      <button id="mode-enroll" class="mode-btn active" onclick="setMode('enroll')">Enroll Face</button>
+      <button id="mode-search" class="mode-btn" onclick="setMode('search')">Search / Verify</button>
+    </div>
+
     <div class="viewport-container">
       <video id="video" autoplay playsinline></video>
       <img id="preview" style="display:none;">
-      <div class="face-guide" id="guide"></div>
       <canvas id="canvas" style="display:none;"></canvas>
     </div>
 
-    <div class="action-area">
-      <button id="btn-start" class="btn btn-main" onclick="openCamera()">Start Camera</button>
-      <button id="btn-snap" class="btn btn-capture" style="display:none;" onclick="capture()">Capture Photo</button>
-      <button id="btn-retake" class="btn btn-outline" style="display:none;" onclick="openCamera()">Retake Photo</button>
-      <button id="btn-upload" class="btn btn-outline" onclick="document.getElementById('fileInput').click()">Upload from Gallery</button>
+    <div class="action-stack">
+      <button id="btn-start" class="btn btn-primary" onclick="openCamera()">Open Camera</button>
+      
+      <button id="btn-snap" class="btn btn-success" style="display:none;" onclick="capture()">Capture Photo</button>
+      
+      <button id="btn-submit" class="btn btn-primary" style="display:none;" onclick="submitAction()">Run Face Match</button>
+      <button id="btn-retry" class="btn btn-outline" style="display:none;" onclick="resetCamera()">← Back / Retry</button>
+      
+      <button id="btn-upload" class="btn btn-outline" onclick="document.getElementById('fileInput').click()">Upload from Device</button>
       <input type="file" id="fileInput" accept="image/*" onchange="uploadFile(event)" style="display:none;"/>
     </div>
 
-    <div class="mode-settings">
-      <span style="font-size: 0.85rem; font-weight: 600;">Processing Mode: <span id="modeLabel" style="color: var(--primary)">Enroll</span></span>
-      <label class="switch">
-        <input type="checkbox" id="modeToggle" onchange="updateModeLabel()">
-        <span class="slider"></span>
-      </label>
-    </div>
-
-    <button id="btn-submit" class="btn btn-main" style="margin-top: 10px; opacity: 0.5;" onclick="submitAction()" disabled>Run Analysis</button>
     <div id="result" style="display:none;"></div>
   </div>
 </div>
@@ -214,20 +196,27 @@
 <script>
 let imageBase64 = "";
 let stream = null;
+let currentMode = "enroll";
 
 const v = document.getElementById("video");
 const p = document.getElementById("preview");
-const g = document.getElementById("guide");
-const btnStart = document.getElementById("btn-start");
-const btnSnap = document.getElementById("btn-snap");
-const btnRetake = document.getElementById("btn-retake");
-const btnSubmit = document.getElementById("btn-submit");
+const resDiv = document.getElementById("result");
+
+const bStart = document.getElementById("btn-start");
+const bSnap = document.getElementById("btn-snap");
+const bSubmit = document.getElementById("btn-submit");
+const bRetry = document.getElementById("btn-retry");
+const bUpload = document.getElementById("btn-upload");
+
+function setMode(mode) {
+  currentMode = mode;
+  document.getElementById("mode-enroll").classList.toggle("active", mode === 'enroll');
+  document.getElementById("mode-search").classList.toggle("active", mode === 'search');
+  resDiv.style.display = "none";
+}
 
 async function openCamera() {
-  imageBase64 = "";
-  btnSubmit.disabled = true;
-  btnSubmit.style.opacity = "0.5";
-  
+  resDiv.style.display = "none";
   try {
     const s = await navigator.mediaDevices.getUserMedia({
       video: { width: 600, height: 600, facingMode: "user" }
@@ -236,20 +225,32 @@ async function openCamera() {
     v.srcObject = s;
     v.style.display = "block";
     p.style.display = "none";
-    g.style.display = "block";
-    
-    btnStart.style.display = "none";
-    btnSnap.style.display = "block";
-    btnRetake.style.display = "none";
+
+    // Toggle Buttons
+    bStart.style.display = "none";
+    bUpload.style.display = "none";
+    bSnap.style.display = "flex";
+    bRetry.style.display = "flex";
   } catch(err) {
-    alert("Camera access denied.");
+    alert("Camera error: Please check permissions.");
   }
+}
+
+function resetCamera() {
+  if(stream) stream.getTracks().forEach(t => t.stop());
+  v.style.display = "none";
+  p.style.display = "none";
+  bStart.style.display = "flex";
+  bUpload.style.display = "flex";
+  bSnap.style.display = "none";
+  bSubmit.style.display = "none";
+  bRetry.style.display = "none";
+  imageBase64 = "";
 }
 
 function capture() {
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
-  
   canvas.width = 600;
   canvas.height = 600;
   ctx.drawImage(v, 0, 0, 600, 600);
@@ -257,15 +258,11 @@ function capture() {
   imageBase64 = canvas.toDataURL("image/jpeg").split(",")[1];
   p.src = "data:image/jpeg;base64," + imageBase64;
   
-  // UI Switch
   v.style.display = "none";
   p.style.display = "block";
-  g.style.display = "none";
-  btnSnap.style.display = "none";
-  btnRetake.style.display = "block";
-  btnSubmit.disabled = false;
-  btnSubmit.style.opacity = "1";
-
+  bSnap.style.display = "none";
+  bSubmit.style.display = "flex";
+  
   if(stream) stream.getTracks().forEach(t => t.stop());
 }
 
@@ -278,36 +275,32 @@ function uploadFile(e) {
     p.src = reader.result;
     v.style.display = "none";
     p.style.display = "block";
-    g.style.display = "none";
-    btnStart.style.display = "block";
-    btnSnap.style.display = "none";
-    btnRetake.style.display = "none";
-    btnSubmit.disabled = false;
-    btnSubmit.style.opacity = "1";
-    if(stream) stream.getTracks().forEach(t => t.stop());
+    
+    bStart.style.display = "none";
+    bUpload.style.display = "none";
+    bSubmit.style.display = "flex";
+    bRetry.style.display = "flex";
   }
   reader.readAsDataURL(file);
 }
 
-function updateModeLabel() {
-  const isSearch = document.getElementById("modeToggle").checked;
-  document.getElementById("modeLabel").textContent = isSearch ? "Search" : "Enroll";
-}
-
-function submitAction() {
-  const action = document.getElementById("modeToggle").checked ? "search" : "blacklist";
-  const resDiv = document.getElementById("result");
+async function submitAction() {
   resDiv.style.display = "block";
-  resDiv.textContent = "// Processing request...";
+  resDiv.textContent = "// Processing " + currentMode.toUpperCase() + "...";
   
-  fetch("/.netlify/functions/face", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ action: action, faceImage: imageBase64 })
-  })
-  .then(res => res.json())
-  .then(data => { resDiv.textContent = JSON.stringify(data, null, 2); })
-  .catch(err => { resDiv.textContent = "Error: " + err.message; });
+  const actionValue = currentMode === "search" ? "search" : "blacklist";
+
+  try {
+    const res = await fetch("/.netlify/functions/face", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ action: actionValue, faceImage: imageBase64 })
+    });
+    const data = await res.json();
+    resDiv.textContent = JSON.stringify(data, null, 2);
+  } catch(err) {
+    resDiv.textContent = "Error: " + err.message;
+  }
 }
 </script>
 
