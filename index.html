@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>VIDA | Face Match Demo</title>
+  <title>VIDA | Face Management</title>
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
@@ -53,7 +53,6 @@
       box-shadow: 0 10px 25px rgba(0,0,0,0.05);
     }
 
-    /* TOP TOGGLE: High Visibility Mode Switcher */
     .mode-selector {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -81,7 +80,6 @@
       box-shadow: 0 2px 8px rgba(0,0,0,0.1);
     }
 
-    /* CLEAN VIEWPORT: No overlays inside */
     .viewport-container {
       width: 100%;
       aspect-ratio: 1/1;
@@ -93,18 +91,9 @@
       position: relative;
     }
 
-    video, #preview {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
+    video, #preview { width: 100%; height: 100%; object-fit: cover; }
 
-    /* BUTTON STYLES */
-    .action-stack {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
+    .action-stack { display: flex; flex-direction: column; gap: 12px; }
 
     .btn {
       padding: 16px;
@@ -124,10 +113,8 @@
     .btn-success { background: var(--primary); color: white; border: none; }
     .btn-outline { background: white; border: 1px solid var(--border); color: var(--text-main); }
     
-    .btn:disabled { opacity: 0.3; cursor: not-allowed; }
     .btn:hover:not(:disabled) { transform: translateY(-1px); filter: brightness(1.05); }
 
-    /* CONSOLE OUTPUT */
     #result {
       margin-top: 1.5rem;
       font-size: 12px;
@@ -174,13 +161,13 @@
 
     <div class="action-stack">
       <button id="btn-start" class="btn btn-primary" onclick="openCamera()">Open Camera</button>
-      
       <button id="btn-snap" class="btn btn-success" style="display:none;" onclick="capture()">Capture Photo</button>
       
-      <button id="btn-submit" class="btn btn-primary" style="display:none;" onclick="submitAction()">Run Face Match</button>
+      <button id="btn-submit" class="btn btn-primary" style="display:none;" onclick="submitAction()">Register Face</button>
+      
       <button id="btn-retry" class="btn btn-outline" style="display:none;" onclick="resetCamera()">← Back / Retry</button>
       
-      <button id="btn-upload" class="btn btn-outline" onclick="document.getElementById('fileInput').click()">Upload from Device</button>
+      <button id="btn-upload" class="btn btn-outline" onclick="document.getElementById('fileInput').click()">Upload Image</button>
       <input type="file" id="fileInput" accept="image/*" onchange="uploadFile(event)" style="display:none;"/>
     </div>
 
@@ -212,6 +199,10 @@ function setMode(mode) {
   currentMode = mode;
   document.getElementById("mode-enroll").classList.toggle("active", mode === 'enroll');
   document.getElementById("mode-search").classList.toggle("active", mode === 'search');
+  
+  // Update button text based on mode
+  bSubmit.textContent = mode === 'enroll' ? 'Register Face' : 'Run Face Match';
+  
   resDiv.style.display = "none";
 }
 
@@ -226,13 +217,12 @@ async function openCamera() {
     v.style.display = "block";
     p.style.display = "none";
 
-    // Toggle Buttons
     bStart.style.display = "none";
     bUpload.style.display = "none";
     bSnap.style.display = "flex";
     bRetry.style.display = "flex";
   } catch(err) {
-    alert("Camera error: Please check permissions.");
+    alert("Camera access denied.");
   }
 }
 
@@ -286,7 +276,8 @@ function uploadFile(e) {
 
 async function submitAction() {
   resDiv.style.display = "block";
-  resDiv.textContent = "// Processing " + currentMode.toUpperCase() + "...";
+  const logPrefix = currentMode === "enroll" ? "ENROLLMENT" : "VERIFICATION";
+  resDiv.textContent = `// INITIALIZING ${logPrefix}...`;
   
   const actionValue = currentMode === "search" ? "search" : "blacklist";
 
